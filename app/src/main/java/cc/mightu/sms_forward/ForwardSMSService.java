@@ -32,7 +32,6 @@ public class ForwardSMSService extends Service {
                     for (SmsMessage smsMessage : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
 
                         String messageBody = smsMessage.getMessageBody();
-                        String emailFrom = smsMessage.getEmailFrom();
                         String address = smsMessage.getOriginatingAddress();
                         long timstamp = smsMessage.getTimestampMillis();
 
@@ -45,11 +44,12 @@ public class ForwardSMSService extends Service {
                         }
 
                         MediaType type = MediaType.parse("application/xml; charset=utf-8");
-                        String xml =
+                        String xml = "<xml><ToUserName>99108515</ToUserName>" +
                                 "<FromUserName><![CDATA[" + address + "]]></FromUserName>\n" +
                                 "<CreateTime>" + timstamp + "</CreateTime>\n" +
                                 "<MsgType><![CDATA[text]]></MsgType>\n" +
                                 "<Content><![CDATA[" + messageBody + "]]></Content>\n" +
+                                "<MsgId>10086</MsgId>" +
                                 "</xml>";
                         final RequestBody body = RequestBody.create(type, xml);
 

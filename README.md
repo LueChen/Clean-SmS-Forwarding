@@ -1,3 +1,15 @@
+# Complaining
+
+CMCC has banned my SMS function since I use the SMS forwarder for just one day, due to "Sending adv SMS too much".
+
+That's RIDICULOUS!!!
+
+If I don't receive the ADV SMS, HOW can I forward that to my other phone ?!
+CMCC DOESN'T ban the real ADV SMS sender but banned a coder who forwards his own SMS to his own phone!!!
+
+So I can only modify the App to forward the SMS to my private server and use Weixin to forward it.
+
+
 # SMS Forward
 ## Introduction
 
