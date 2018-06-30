@@ -7,43 +7,20 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.ContentObserver;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.IBinder;
 import android.provider.Telephony;
 import android.support.v7.app.NotificationCompat;
-import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
-import android.text.format.DateFormat;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.ArrayList;
 
 import okhttp3.*;
 
 public class ForwardSMSService extends Service {
     private static final String LOG_TAG = "ForwardSMSService";
-
-    private static final String SMS_INBOX_URI = "content://sms/inbox";
-//    private static Uri uriSMS = Uri.parse("content://mms-sms/conversations/");
-
-    private static final String[] PROJECTION = new String[]{
-            Telephony.Sms._ID,
-            Telephony.Sms.ADDRESS,
-            Telephony.Sms.BODY,
-            Telephony.Sms.DATE
-    };
-
-    private long mReceivedMsgDate = 0;
-
-    private OkHttpClient httpClient = new OkHttpClient();
-
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -61,26 +38,31 @@ public class ForwardSMSService extends Service {
 
                         Log.i("sms", "address: " + address + " time:" + timstamp);
 
-                        String number = context.getSharedPreferences("data", Context.MODE_PRIVATE).getString("number", "");
-                        if (number == "") {
+                        String serverIPandPort = context.getSharedPreferences("data", Context.MODE_PRIVATE).getString("server", "");
+                        if (serverIPandPort == "") {
                             Log.i("sms", "weixin server URL not set. ignore this one.");
                             return;
                         }
 
-                        final FormBody formBody = new FormBody.Builder()
-                                .add("from", address)
-                                .add("timestamp", String.valueOf(timstamp))
-                                .add("content", messageBody)
-                                .build();
+                        MediaType type = MediaType.parse("application/xml; charset=utf-8");
+                        String xml =
+                                "<FromUserName><![CDATA[" + address + "]]></FromUserName>\n" +
+                                "<CreateTime>" + timstamp + "</CreateTime>\n" +
+                                "<MsgType><![CDATA[text]]></MsgType>\n" +
+                                "<Content><![CDATA[" + messageBody + "]]></Content>\n" +
+                                "</xml>";
+                        final RequestBody body = RequestBody.create(type, xml);
 
-                        final String url = "http://" + number + ":80/phone";
+                        final String url = "http://" + serverIPandPort + "/phone";
 
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
+                                OkHttpClient httpClient = new OkHttpClient();
+
                                 final Request request = new Request.Builder()
                                         .url(url)
-                                        .post(formBody)
+                                        .post(body)
                                         .build();
                                 try {
                                     httpClient.newCall(request).execute();
@@ -89,12 +71,6 @@ public class ForwardSMSService extends Service {
                                 }
                             }
                         }).start();
-
-//                        Log.i("sms", "sending to " + number);
-//                        Log.i("sms", "message send:" + message);
-//                        SmsManager sms = SmsManager.getDefault();
-//                        ArrayList<String> dividedMessages = sms.divideMessage(message);
-//                        sms.sendMultipartTextMessage(number, null, dividedMessages, null, null);
                     }
                 }
             }
