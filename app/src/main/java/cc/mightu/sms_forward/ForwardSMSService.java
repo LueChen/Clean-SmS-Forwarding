@@ -21,8 +21,11 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.ArrayList;
+
+import okhttp3.*;
 
 public class ForwardSMSService extends Service {
     private static final String LOG_TAG = "ForwardSMSService";
@@ -39,11 +42,14 @@ public class ForwardSMSService extends Service {
 
     private long mReceivedMsgDate = 0;
 
+    private OkHttpClient httpClient = new OkHttpClient();
+
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if(Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(action)){
+            if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(action)) {
                 Log.i("sms", "on receive," + intent.getAction());
                 if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) {
                     for (SmsMessage smsMessage : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
@@ -51,22 +57,44 @@ public class ForwardSMSService extends Service {
                         String messageBody = smsMessage.getMessageBody();
                         String emailFrom = smsMessage.getEmailFrom();
                         String address = smsMessage.getOriginatingAddress();
-                        Log.i("sms", "body: " + messageBody);
-                        Log.i("sms", "address: " + address);
+                        long timstamp = smsMessage.getTimestampMillis();
 
-                        String message = "[" + address + "] " + messageBody;
+                        Log.i("sms", "address: " + address + " time:" + timstamp);
 
                         String number = context.getSharedPreferences("data", Context.MODE_PRIVATE).getString("number", "");
                         if (number == "") {
-                            Log.i("sms", "phone number not set. ignore this one.");
+                            Log.i("sms", "weixin server URL not set. ignore this one.");
                             return;
                         }
-                        Log.i("sms", "sending to " + number);
 
-                        Log.i("sms", "message send:" + message);
-                        SmsManager sms = SmsManager.getDefault();
-                        ArrayList<String> dividedMessages = sms.divideMessage(message);
-                        sms.sendMultipartTextMessage(number, null, dividedMessages, null, null);
+                        final FormBody formBody = new FormBody.Builder()
+                                .add("from", address)
+                                .add("timestamp", String.valueOf(timstamp))
+                                .add("content", messageBody)
+                                .build();
+
+                        final String url = "http://" + number + ":80/phone";
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                final Request request = new Request.Builder()
+                                        .url(url)
+                                        .post(formBody)
+                                        .build();
+                                try {
+                                    httpClient.newCall(request).execute();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
+
+//                        Log.i("sms", "sending to " + number);
+//                        Log.i("sms", "message send:" + message);
+//                        SmsManager sms = SmsManager.getDefault();
+//                        ArrayList<String> dividedMessages = sms.divideMessage(message);
+//                        sms.sendMultipartTextMessage(number, null, dividedMessages, null, null);
                     }
                 }
             }

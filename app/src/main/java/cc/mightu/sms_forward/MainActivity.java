@@ -46,7 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private void setupPermissions() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 String[] permissionsWeNeed = new String[]{Manifest.permission.SEND_SMS
                         , Manifest.permission.READ_SMS
@@ -75,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendSMS(View v) {
-        EditText editText = (EditText) findViewById(cc.mightu.sms_forward.R.id.edit_phone_number);
+        EditText editText = (EditText)findViewById(cc.mightu.sms_forward.R.id.edit_phone_number);
         String number = editText.getText().toString();
 
         SharedPreferences.Editor editor = getSharedPreferences("data", Context.MODE_PRIVATE).edit();
@@ -85,8 +87,8 @@ public class MainActivity extends AppCompatActivity {
         String message = "This is a test message to " + number;
         Log.i("sms", "message send:" + message);
 
-//        SmsManager smsManager = SmsManager.getDefault();
-//        smsManager.sendTextMessage(number, null, message, null, null);
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(number, null, message, null, null);
     }
 }
 
